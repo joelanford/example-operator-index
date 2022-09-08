@@ -1,4 +1,4 @@
-#! /bin/bash
+#!/usr/bin/env bash
 #  PNAME=$$(bin/yq "select(.schema == \"olm.package\") | .name" catalog/$(OPERATOR_NAME)/catalog.yaml)
 #  @echo `bin/yq "select(.schema == \"olm.package\") | .name" catalog/$(OPERATOR_NAME)/catalog.yaml`
 #  @export PNAME=$(shell bin/yq "select(.schema == \"olm.package\") | .name" catalog/$(OPERATOR_NAME)/catalog.yaml)
@@ -13,13 +13,21 @@ function usage () {
   exit 1
 }
 
-YQ=bin/yq
+function logit() {
+    if [ $QUIET_MODE -eq 0 ]; then
+        echo $1
+    fi
+}
 
-while getopts 'n:f:' arg; 
+YQ=bin/yq
+QUIET_MODE=0
+
+while getopts 'n:f:q' arg; 
 do
   case "$arg" in
     f) FILENAME=$OPTARG ;;
     n) PKGNAME=$OPTARG ;;
+    q) QUIET_MODE=1 ;;
     h) usage ;; 
   esac
 done
@@ -30,37 +38,37 @@ shift `expr $OPTIND - 1`
 
 if [ -z $FILENAME ]
 then
-  echo "veneer-file-name is empty"
+  logit "veneer-file-name is empty"
   usage
 fi
 
 if [ ! -e $FILENAME ]
 then
-  echo "$FILENAME does not exist"
+  logit "$FILENAME does not exist"
   exit 253
 fi
 
 if [ -z $PKGNAME ]
 then
-  echo "package-name is empty"
+  logit "package-name is empty"
   usage
 fi
 
 if [ ! -e $YQ ]
 then
-  echo "unable to find yq binary: $YQ"
+  logit "unable to find yq binary: $YQ"
   exit 255
 fi
 
 SCHEMA_PNAME=$($YQ "select(.schema == \"olm.package\") | .name" ${FILENAME})
 if [ $SCHEMA_PNAME != $PKGNAME ] 
 then
-  echo "operator name in veneer and Makefile do not agree:"
-  echo "    Makefile(${SCHEMA_PNAME})"
-  echo "    veneer(  ${PKGNAME})"
+  logit "operator name in catalog and Makefile do not agree:"
+  logit "    Makefile(${SCHEMA_PNAME})"
+  logit "    catalog (${PKGNAME})"
   exit 254
 else
-  echo "operator name match between veneer and Makefile"
+  logit "operator name match between catalog and Makefile"
 fi
 
 
